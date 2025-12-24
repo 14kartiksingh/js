@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real time search app</title>
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            background: #000;
+        }
+
+        .inp {
+            display: block;
+            margin-top: 50px;
+            padding: 15px 20px;
+            width: 300px;
+            background: #111;
+            color: #aaa;
+            border: none;
+            outline: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .inp::placeholder {
+            color: #aaa;
+        }
+
+        .cards {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            width: 220px;
+            height: 300px;
+            overflow: hidden;
+            border-radius: 12px;
+            position: relative;
+            background: #111;
+        }
+
+        .bgimg {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        .content {
+            color: whitesmoke;
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            z-index: 2;
+        }
+
+        .content h3 {
+            font-size: 18px;
+            margin-bottom: 6px;
+        }
+
+        .content p {
+            color: #ddd;
+            font-size: 14px;
+        }
+
+        .blurlayer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: bottom;
+
+            filter: blur(12px);
+            z-index: 1;
+            mask-image: linear-gradient(to top, black, transparent);
+            -webkit-mask-image: linear-gradient(to top, black, transparent);
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="container">
+        <input class="inp" type="text" placeholder="Search User...">
+        <div class="cards">
+            <!-- <div class="card"> -->
+            <!-- <img src="https://i.pinimg.com/736x/cd/9b/1c/cd9b1cf5b96e8300751f952488d6c002.jpg" class="bgimg" alt="">
+                <div class="blurlayer"></div>
+                <div class="content">
+                    <h3>Amisha Rathore</h3>
+                    <p>silent chaos in a loud world 🌑🖤</p>
+                </div> -->
+            <!-- </div> -->
+        </div>
+    </div>
+    <script>
+        const users = [
+            {
+                name: "Amisha Rathore",
+                pic: "https://i.pinimg.com/736x/cd/9b/1c/cd9b1cf5b96e8300751f952488d6c002.jpg",
+                bio: "silent chaos in a loud world 🌑🖤"
+            },
+            {
+                name: "Amita Mehta",
+                pic: "https://i.pinimg.com/736x/1f/2f/85/1f2f856bf3a020ed8ee9ecb3306ae074.jpg",
+                bio: "main character energy 🎬 | coffee first ☕"
+            },
+            {
+                name: "Isha Oberoi",
+                pic: "https://i.pinimg.com/736x/23/48/7e/23487ef1268cfe017047a0640318c0d0.jpg",
+                bio: "late night thinker 🌙 | docs & dreams"
+            },
+            {
+                name: "Diya Bansal",
+                pic: "https://i.pinimg.com/736x/74/b0/67/74b067e6c5ece09d99f68c42c5f6754e.jpg",
+                bio: "art, chaos & good vibes 🎨✨"
+            },
+            {
+                name: "Tanay Rawat",
+                pic: "https://i.pinimg.com/736x/9b/78/b9/9b78b95425278ee37e88869b8c5fb2c6.jpg",
+                bio: "soft heart, sharp mind 🧠"
+            },
+            {
+                name: "Mohit Chhabra",
+                pic: "https://i.pinimg.com/736x/22/8b/cf/228bcf5a0800f813cd1744d4ccbf01ea.jpg",
+                bio: "aesthetic overload 📸"
+            }
+        ];
+
+        function makecard(arr) {
+            arr.forEach(function (user) {
+                cards = document.querySelector(".cards");
+                card = document.createElement("div");
+                card.classList.add("card");
+                img = document.createElement("img");
+                img.classList.add("bgimg");
+                img.src = user.pic;
+                blurimg = document.createElement("div");
+                blurimg.classList.add("blurlayer");
+                blurimg.style.backgroundImage = `url(${user.pic})`;
+                content = document.createElement("div");
+                content.classList.add("content");
+                heading = document.createElement("h3");
+                heading.textContent = user.name;
+                const para = document.createElement("p");
+                para.textContent = user.bio;
+                content.append(heading);
+                content.append(para);
+                card.append(img);
+                card.append(blurimg);
+                card.append(content);
+                cards.append(card);
+            });
+        }
+        makecard(users);
+        let inp  = document.querySelector(".inp");
+        inp.addEventListener("input",function(){
+            let newuser = users.filter((user)=>{
+                return user.name.toLowerCase().startsWith(inp.value);
+            });
+            document.querySelector(".cards").innerHTML="";
+            if(newuser.length == 0){
+                const msg = document.createElement("p");
+                msg.textContent="No Users Found...";
+                msg.style.color="red";
+                msg.style.fontSize = "18px";
+                document.querySelector(".cards").append(msg);
+            }
+            makecard(newuser);
+        });
+    </script>
+</body>
+
+</html>

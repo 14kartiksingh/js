@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reaction Timer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center bg-gray-900">
+
+    <div id="box" class="w-96 p-8 rounded-xl bg-gray-800 text-white text-center transition-all duration-300">
+
+        <h1 id="message" class="text-2xl font-bold mb-6">
+            Click Start to Play
+        </h1>
+
+        <button id="startBtn" class="px-6 py-3 rounded-full bg-blue-500 hover:bg-blue-600
+             transition font-semibold disabled:opacity-50
+         disabled:cursor-not-allowed
+         disabled:hover:bg-red-500">
+            Start
+        </button>
+
+    </div>
+
+    <script>
+        const delay = Math.random() * 3000 + 3000;
+        let state = "idle";
+        const btn = document.querySelector("#startBtn");
+        const box = document.querySelector("#box");
+        const msg = document.querySelector("#message");
+        let starttime;
+        let endtime;
+        let ms;
+        let bestScore = localStorage.getItem("bestScore");
+        if (bestScore === null) {
+            bestScore = Infinity; // means no score yet
+        } else {
+            bestScore = Number(bestScore);
+        }
+        btn.addEventListener("click", function () {
+            if (state === "idle") {
+                let c = 3;
+                const timer = setInterval(() => {
+                    btn.textContent = c;
+                    c--;
+                    if (c < 1) {
+                        clearInterval(timer);
+                        btn.textContent = "Wait...";
+                        btn.disabled = true;
+                        state = "wait";
+                        setTimeout(() => {
+                            if (state === "wait") {
+                                btn.disabled = false;
+                                btn.textContent = "Click Now...";
+                                box.classList.remove("bg-gray-800");
+                                box.classList.add("bg-green-800");
+                                starttime = Date.now();
+                                state = "ready";
+                            }
+                        }, delay);
+                    }
+                }, 1000);
+            }
+        });
+        box.addEventListener("click", function () {
+            if (state === "wait") {
+                msg.textContent = "Too Soon";
+                state = "idle";
+                btn.disabled = false;
+                btn.textContent = "Play Again...";
+                box.classList.remove("bg-green-800");
+                box.classList.add("bg-gray-800");
+            }
+            if (state === "ready") {
+                const reaction = Date.now() - starttime;
+                msg.textContent = `Your time: ${reaction} ms and best score: ${bestScore}`;
+                state = "idle";
+                btn.disabled = false;
+                btn.textContent = "Play Again";
+                box.classList.remove("bg-green-800");
+                box.classList.add("bg-gray-800");
+                if (reaction < bestScore) {
+                    bestScore = reaction;
+                    localStorage.setItem("bestScore", bestScore);
+                }
+
+            }
+        });
+    </script>
+</body>
+
+</html>

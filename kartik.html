@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multi-Student Result Form → Export PDF</title>
+  <style>
+    :root{--accent:#0b63d6;--muted:#f3f4f6}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; padding:18px; background:#f7f8fb;color:#111}
+    h1{margin:0 0 12px}
+    .card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(20,20,50,0.06);margin-bottom:14px}
+    label{display:block;font-size:13px;margin-bottom:6px}
+    input[type=text], input[type=number], select{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box}
+    .row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .row-2{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    button{background:var(--accent);color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+    button.secondary{background:#6b7280}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border:1px solid #e5e7eb;padding:8px;text-align:center;font-size:14px}
+    th{background:var(--muted)}
+    .actions{display:flex;gap:8px;align-items:center}
+    .small{font-size:13px;color:#555}
+    @media (max-width:700px){.row{grid-template-columns:1fr}.row-2{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <h1>Result Entry — Multiple Students</h1>
+  <div class="card">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px">
+        <label>Class & Section</label>
+        <input id="classInput" type="text" placeholder="e.g. 7th A" value="7th A">
+      </div>
+      <div style="min-width:160px">
+        <label>Default Out of (per subject)</label>
+        <input id="outOf" type="number" value="100">
+      </div>
+      <div style="min-width:200px">
+        <label>Subjects (comma separated)</label>
+        <input id="subjectsInput" type="text" value="Hindi,English,Maths,Social Science,Sanskrit">
+      </div>
+      <div style="min-width:160px">
+        <label>&nbsp;</label>
+        <div class="actions">
+          <button id="applySubjectsBtn">Apply Subjects</button>
+          <button id="clearAll" class="secondary">Clear All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Add Student</h3>
+    <div class="row">
+      <div>
+        <label>Student Name</label>
+        <input id="stuName" type="text" placeholder="Ravi Pratap Singh">
+      </div>
+      <div>
+        <label>Class (optional)</label>
+        <input id="stuClass" type="text" placeholder="Overrides default class">
+      </div>
+      <div>
+        <label>Roll / ID (optional)</label>
+        <input id="stuRoll" type="text" placeholder="e.g. 12">
+      </div>
+    </div>
+
+    <div style="margin-top:8px">
+      <label>Marks</label>
+      <div id="marksArea" class="row-2"></div>
+    </div>
+
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button id="addStudentBtn">Add Student to List</button>
+      <button id="downloadPdf" class="secondary">Export All as PDF</button>
+      <div style="margin-left:auto" class="small">Students in list: <span id="count">0</span></div>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard">
+    <h3 style="margin-top:0">Students Table</h3>
+    <div id="tableWrap">
+      <table id="studentsTable">
+        <thead>
+          <tr id="tableHead">
+            <th>Roll</th>
+            <th>Name</th>
+            <th>Class</th>
+            <!-- subjects inserted dynamically -->
+            <th>Total</th>
+            <th>Out of</th>
+            <th>Percentage</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    // Basic app without frameworks
+    const subjectsInput = document.getElementById('subjectsInput');
+    const outOfInput = document.getElementById('outOf');
+    const marksArea = document.getElementById('marksArea');
+    const applySubjectsBtn = document.getElementById('applySubjectsBtn');
+    const addStudentBtn = document.getElementById('addStudentBtn');
+    const studentsTableBody = document.querySelector('#studentsTable tbody');
+    const tableHead = document.getElementById('tableHead');
+    const countEl = document.getElementById('count');
+    const downloadPdfBtn = document.getElementById('downloadPdf');
+    const clearAllBtn = document.getElementById('clearAll');
+
+    let subjects = subjectsInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+    let students = [];
+
+    function renderMarksFields(){
+      marksArea.innerHTML = '';
+      subjects.forEach((s, idx)=>{
+        const div = document.createElement('div');
+        div.innerHTML = `<label style="font-size:12px">${s}</label><input data-subidx="${idx}" class="markInput" type="number" min="0" placeholder="marks">`;
+        marksArea.appendChild(div);
+      });
+    }
+
+    function renderTableHeader(){
+      // remove old subject headers
+      // first remove subject headers if present (they sit after Name and Class)
+      // rebuild full header
+      tableHead.innerHTML = '';
+      const headers = ['Roll','Name','Class', ...subjects, 'Total','Out of','Percentage','Action'];
+      headers.forEach(h=>{
+        const th = document.createElement('th'); th.textContent = h; tableHead.appendChild(th);
+      });
+    }
+
+    function refreshTable(){
+      studentsTableBody.innerHTML = '';
+      students.forEach((stu, i)=>{
+        const tr = document.createElement('tr');
+        const outOfPerSub = Number(outOfInput.value) || 100;
+        const totalOut = outOfPerSub * subjects.length;
+        const total = stu.marks.reduce((a,b)=>a+b,0);
+        const perc = (total / totalOut) * 100;
+
+        tr.innerHTML = `
+          <td>${stu.roll || ''}</td>
+          <td style="text-align:left;padding-left:8px">${stu.name}</td>
+          <td>${stu.className}</td>
+          ${stu.marks.map(m=>`<td>${m}</td>`).join('')}
+          <td>${total}</td>
+          <td>${totalOut}</td>
+          <td>${perc.toFixed(2)}%</td>
+          <td><button data-idx="${i}" class="deleteBtn">Delete</button></td>
+        `;
+        studentsTableBody.appendChild(tr);
+      });
+      countEl.textContent = students.length;
+    }
+
+    applySubjectsBtn.addEventListener('click', ()=>{
+      subjects = subjectsInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+      renderMarksFields(); renderTableHeader();
+    });
+
+    clearAllBtn.addEventListener('click', ()=>{
+      if(!confirm('Clear all students and reset?')) return;
+      students = []; refreshTable();
+    });
+
+    addStudentBtn.addEventListener('click', ()=>{
+      const name = document.getElementById('stuName').value.trim();
+      if(!name){ alert('Enter student name'); return; }
+      const classOverride = document.getElementById('stuClass').value.trim();
+      const roll = document.getElementById('stuRoll').value.trim();
+      const marksEls = Array.from(document.querySelectorAll('.markInput'));
+      const outOfPerSub = Number(outOfInput.value) || 100;
+      const marks = marksEls.map(e=>{
+        const v = e.value.trim(); return v? Number(v): 0;
+      });
+      // basic validation
+      if(marks.length !== subjects.length){ alert('Marks fields mismatch'); return; }
+      students.push({name, className: classOverride || document.getElementById('classInput').value || '', roll, marks});
+      // clear form
+      document.getElementById('stuName').value = '';
+      document.getElementById('stuClass').value = '';
+      document.getElementById('stuRoll').value = '';
+      marksEls.forEach(m=>m.value='');
+      refreshTable();
+    });
+
+    // delete row
+    document.addEventListener('click', (e)=>{
+      if(e.target && e.target.classList.contains('deleteBtn')){
+        const idx = Number(e.target.dataset.idx); if(isNaN(idx)) return;
+        students.splice(idx,1); refreshTable();
+      }
+    });
+
+    // initial render
+    renderMarksFields(); renderTableHeader();
+
+    // Export to PDF using html2canvas + jsPDF
+    downloadPdfBtn.addEventListener('click', async ()=>{
+      if(students.length===0){ if(!confirm('No students added. Export empty sheet?')) return; }
+      const filename = prompt('PDF filename','Results.pdf') || 'Results.pdf';
+
+      // prepare a printable clone to control layout
+      const wrap = document.createElement('div');
+      wrap.style.padding = '20px';
+      wrap.style.background = '#fff';
+      wrap.style.color = '#111';
+      wrap.style.fontFamily = 'Arial, Helvetica, sans-serif';
+
+      const header = document.createElement('div');
+      header.innerHTML = `<h2 style="margin:0 0 8px">Result Sheet</h2><div style="margin-bottom:8px">Class: ${document.getElementById('classInput').value}</div>`;
+      wrap.appendChild(header);
+
+      const tbl = document.createElement('table');
+      tbl.style.borderCollapse = 'collapse'; tbl.style.width = '100%';
+      const ths = ['Roll','Name','Class', ...subjects, 'Total','Out of','Percentage'];
+      const thead = document.createElement('thead');
+      const thr = document.createElement('tr');
+      ths.forEach(h=>{ const th = document.createElement('th'); th.textContent=h; th.style.border='1px solid #333'; th.style.padding='6px'; th.style.background='#eee'; thr.appendChild(th); });
+      thead.appendChild(thr); tbl.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      const outOfPerSub = Number(outOfInput.value) || 100; const totalOut = outOfPerSub * subjects.length;
+      students.forEach(stu=>{
+        const tr = document.createElement('tr');
+        const total = stu.marks.reduce((a,b)=>a+b,0); const perc = (total/totalOut)*100;
+        const cells = [stu.roll||'', stu.name, stu.className, ...stu.marks.map(m=>String(m)), String(total), String(totalOut), perc.toFixed(2)+'%'];
+        cells.forEach(c=>{ const td = document.createElement('td'); td.textContent = c; td.style.border='1px solid #333'; td.style.padding='6px'; td.style.fontSize='12px'; tr.appendChild(td); });
+        tbody.appendChild(tr);
+      });
+      tbl.appendChild(tbody);
+      wrap.appendChild(tbl);
+
+      document.body.appendChild(wrap); // temporarily add to DOM so html2canvas can render
+
+      // compute width to fit A4 ratio
+      const { jsPDF } = window.jspdf;
+      const canvas = await html2canvas(wrap, { scale:2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p','mm','a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(filename);
+
+      // cleanup
+      document.body.removeChild(wrap);
+    });
+  </script>
+</body>
+</html>
