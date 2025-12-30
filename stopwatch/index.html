@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stopwatch</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+
+  <div class="bg-gray-800 p-6 rounded-xl w-80 text-center space-y-4">
+
+    <div id="display" class="text-3xl font-mono">
+      00 : 00 : 000
+    </div>
+
+    <div class="flex justify-between">
+      <button id="start" class="px-4 py-2 bg-green-500 rounded">Start</button>
+      <button id="pause" class="px-4 py-2 bg-yellow-500 rounded">Pause</button>
+      <button id="reset" class="px-4 py-2 bg-red-500 rounded">Reset</button>
+    </div>
+
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

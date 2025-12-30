@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Card</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 min-h-screen flex items-center justify-center">
+    <div class="bg-gray-800 rounded-lg shadow-lg p-8 w-80">
+        <div class="text-center">
+            <div id="m">
+
+            </div>
+            <button id="btn"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+                Refresh
+            </button>
+        </div>
+    </div>
+    <script>
+        function refresh() {
+            fetch("https://randomuser.me/api/")
+                .then((raw) => raw.json())
+                .then((data) => {
+                    const user = data.results[0];
+                    const container = document.querySelector("#m");
+                    const img = document.createElement("img");
+                    img.id = "userImage";
+                    img.src = user.picture.large;
+                    img.alt = "User";
+                    img.className = "w-32 h-32 rounded-full mx-auto mb-4 object-cover";
+                    const name = document.createElement("h2");
+                    name.id = "userName";
+                    name.className = "text-2xl font-bold text-white mb-2";
+                    name.textContent = user.name.title + ". " + user.name.first + " " + user.name.last;
+                    const email = document.createElement("p");
+                    email.id = "userEmail";
+                    email.className = "text-gray-400 mb-6";
+                    email.textContent = user.email;
+                    container.textContent="";
+                    container.append(img, name, email);
+                }
+            )
+        }
+        refresh();
+        document.querySelector("#btn").addEventListener("click",function(){
+            refresh();
+        });
+    </script>
+</body>
+
+</html>

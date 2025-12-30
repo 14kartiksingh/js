@@ -1,0 +1,90 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Todo App</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <div class="bg-gray-800 p-6 rounded-xl w-96 space-y-4">
+            <h1 class="text-2xl font-bold text-center">Todo App</h1>
+            <div class="flex gap-2">
+                <input id="todoInput" type="text" class="flex-1 p-2 rounded bg-gray-700 outline-none"
+                    placeholder="Add a task..." />
+                <button id="addBtn" class="px-4 bg-blue-500 hover:bg-blue-600 rounded">
+                    Add
+                </button>
+            </div>
+            <ul id="todoList" class="space-y-2"></ul>
+        </div>
+        <script>
+            let todos = [];
+            let inp = document.querySelector("#todoInput");
+            const add = document.querySelector("#addBtn");
+            const todoList = document.querySelector("#todoList");
+            const savedTodos = localStorage.getItem("todos");
+            if (savedTodos) {
+                todos = JSON.parse(savedTodos);
+                renderTodos();
+            }
+            function saveTodos() {
+                localStorage.setItem("todos", JSON.stringify(todos));
+            }
+            function renderTodos() {
+                todoList.innerHTML = "";
+                todos.forEach((todo, index) => {
+                    const li = document.createElement("li");
+                    const div = document.createElement("div");
+                    const checkbox = document.createElement("input");
+                    const span = document.createElement("span");
+                    const btn = document.createElement("button");
+                    checkbox.type = "checkbox";
+                    checkbox.checked = todo.completed;
+                    checkbox.classList.add("w-4", "h-4", "accent-blue-500");
+                    span.textContent = todo.text;
+                    span.classList.add("text-white");
+                    if (todo.completed) {
+                        span.classList.add("line-through", "text-gray-400");
+                        li.classList.add("opacity-60");
+                    }
+                    btn.textContent = "✕";
+                    btn.classList.add("text-red-400", "hover:text-red-500");
+                    div.classList.add("flex", "items-center", "gap-3");
+                    li.classList.add(
+                        "flex",
+                        "items-center",
+                        "justify-between",
+                        "bg-gray-700",
+                        "px-4",
+                        "py-2",
+                        "rounded-lg"
+                    );
+                    checkbox.addEventListener("change", () => {
+                        todos[index].completed = checkbox.checked;
+                        saveTodos();
+                        renderTodos();
+                    });
+                    btn.addEventListener("click", () => {
+                        todos.splice(index, 1);
+                        saveTodos();
+                        renderTodos();
+                    });
+                    div.append(checkbox, span);
+                    li.append(div, btn);
+                    todoList.append(li);
+                });
+            }
+            add.addEventListener("click", function () {
+                const task = inp.value.trim();
+                if (task === "") return;
+                todos.push({
+                    text: task,
+                    completed: false
+                });
+                saveTodos();
+                renderTodos();
+                inp.value = "";
+            });
+        </script>
+    </body>
+    </html>
